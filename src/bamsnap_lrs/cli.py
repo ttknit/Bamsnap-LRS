@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 def add_common_args(parser):
@@ -408,11 +408,16 @@ def main():
         failed = 0
         
         if args.threads > 1:
-            with ThreadPoolExecutor(max_workers=args.threads) as executor:
-                # Submit all jobs
-                future_to_pos = {executor.submit(process_single_position, args, pos, is_rna=(args.cmd == "rna")): pos for pos in positions}
+            with ProcessPoolExecutor(max_workers=args.threads) as executor:
+                future_to_pos = {
+                    executor.submit(
+                        process_single_position, 
+                        args, 
+                        pos, 
+                        is_rna=(args.cmd == "rna")
+                    ): pos for pos in positions
+                }
                 
-                # Collect results
                 for future in as_completed(future_to_pos):
                     success, pos = future.result()
                     if success:
